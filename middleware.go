@@ -90,7 +90,7 @@ func writeLogToFile(entry LogEntry) {
 
 	// Open the daily log file
 	logFile := filepath.Join(logDir, time.Now().UTC().Format("2006-01-02")+".json")
-	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		log.Printf("Failed to open log file: %v", err)
 		return
@@ -99,7 +99,17 @@ func writeLogToFile(entry LogEntry) {
 
 	// Read existing logs (if any)
 	var logs []LogEntry
-	if stat, _ := file.Stat(); stat.Size() > 0 {
+	stat, err := file.Stat()
+	if err != nil {
+		log.Printf("Failed to get file stats: %v", err)
+		return
+	}
+	if stat.Size() > 0 {
+		// Reset file pointer to the beginning for reading
+		if _, err := file.Seek(0, 0); err != nil {
+			log.Printf("Failed to seek to the beginning of the file: %v", err)
+			return
+		}
 		if err := json.NewDecoder(file).Decode(&logs); err != nil {
 			log.Printf("Failed to decode existing logs: %v", err)
 			return
@@ -109,9 +119,15 @@ func writeLogToFile(entry LogEntry) {
 	// Append the new log entry
 	logs = append(logs, entry)
 
-	// Write back the updated logs
-	file.Truncate(0)
-	file.Seek(0, 0)
+	// Truncate the file and write back the updated logs
+	if err := file.Truncate(0); err != nil {
+		log.Printf("Failed to truncate log file: %v", err)
+		return
+	}
+	if _, err := file.Seek(0, 0); err != nil {
+		log.Printf("Failed to seek to the beginning of the file: %v", err)
+		return
+	}
 	if err := json.NewEncoder(file).Encode(logs); err != nil {
 		log.Printf("Failed to write log entry: %v", err)
 	}
