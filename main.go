@@ -118,11 +118,11 @@ func main() {
 			}
 		}
 	}
-	http.HandleFunc("/", handleIndex)
-	http.HandleFunc("/login", handleLogin)
-	http.HandleFunc("/ws/poll", handleWebsocketPoll)
-	http.HandleFunc("/chat/completions", handleGitHubProxy)
-	http.HandleFunc("/models", handleGitHubProxy)
+	http.Handle("/", loggingMiddleware(http.HandlerFunc(handleIndex)))
+	http.Handle("/login", loggingMiddleware(http.HandlerFunc(handleLogin)))
+	http.Handle("/ws/poll", loggingMiddleware(http.HandlerFunc(handleWebsocketPoll)))
+	http.Handle("/chat/completions", loggingMiddleware(http.HandlerFunc(handleGitHubProxy)))
+	http.Handle("/models", loggingMiddleware(http.HandlerFunc(handleGitHubProxy)))
 	log.Printf("Listening at http://%s\n", listenAddr)
 	log.Fatal(http.ListenAndServe(listenAddr, nil))
 }
