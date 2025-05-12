@@ -42,7 +42,10 @@ func loggingMiddleware(next http.Handler) http.Handler {
 
 		// Attempt to parse response body as JSON
 		var responseBody interface{}
-		json.Unmarshal(recorder.body.Bytes(), &responseBody)
+		if err := json.Unmarshal(recorder.body.Bytes(), &responseBody); err != nil {
+			// If the response body is not JSON, store it as a string
+			responseBody = recorder.body.String()
+		}
 
 		// Create log entry
 		logEntry := LogEntry{
@@ -73,7 +76,9 @@ func (rec *responseRecorder) WriteHeader(statusCode int) {
 }
 
 func (rec *responseRecorder) Write(data []byte) (int, error) {
+	// Write the response body to the buffer
 	rec.body.Write(data)
+	// Write the response body to the actual ResponseWriter
 	return rec.ResponseWriter.Write(data)
 }
 
