@@ -40,11 +40,25 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(recorder, r)
 		duration := time.Since(start)
 
-		// Attempt to parse response body as JSON
-		var responseBody interface{}
-		if err := json.Unmarshal(recorder.body.Bytes(), &responseBody); err != nil {
-			// If the response body is not JSON, store it as a string
-			responseBody = recorder.body.String()
+		// Handle streamed JSON results
+		var responseBody []interface{}
+		bodyBytes := recorder.body.Bytes()
+
+		lines := bytes.Split(bodyBytes, []byte("\n"))
+		for _, line := range lines {
+			if len(line) == 0 {
+				continue
+			}
+			// Strip "data: " prefix if present
+			line = bytes.TrimPrefix(line, []byte("data: "))
+			var part interface{}
+			if err := json.Unmarshal(line, &part); err != nil {
+				// If a part is not valid JSON, log the error and store the raw body
+				log.Printf("Failed to decode JSON part: %v", err)
+				responseBody = append(responseBody, string(line))
+				continue
+			}
+			responseBody = append(responseBody, part)
 		}
 
 		// Create log entry
