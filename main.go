@@ -120,7 +120,7 @@ func main() {
 	}
 	http.Handle("/", loggingMiddleware(http.HandlerFunc(handleIndex)))
 	http.Handle("/login", loggingMiddleware(http.HandlerFunc(handleLogin)))
-	http.Handle("/ws/poll", loggingMiddleware(http.HandlerFunc(handleWebsocketPoll)))
+	http.Handle("/ws/poll", http.HandlerFunc(handleWebsocketPoll))
 	http.Handle("/chat/completions", loggingMiddleware(http.HandlerFunc(handleGitHubProxy)))
 	http.Handle("/models", loggingMiddleware(http.HandlerFunc(handleGitHubProxy)))
 	log.Printf("Listening at http://%s\n", listenAddr)
